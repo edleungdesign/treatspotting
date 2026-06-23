@@ -1,0 +1,9 @@
+{
+  "appShell": {"eyebrow":"香港超市格價追蹤","nav":"主要導覽","searchPlaceholder":"搜尋產品、品牌或編號","storeFilter":"商店篩選","allStores":"全部商店","alerts":"食安警示","theme":"主題","language":"語言","quick":{"watched":"已追蹤","drops":"跌價","offers":"優惠","lowest90":"90日新低"},"views":{"dashboard":"總覽","results":"結果","watchlist":"追蹤清單","categories":"分類"},"bulkToast":{"remove":"已移除選取的追蹤項目。","share":"已複製分享連結。","compare":"已開啟比較清單。"}},
+  "alerts": {"eyebrow":"食安中心公告","title":"食安警示","source":"前往食安中心公告","severity":{"recall":"回收","warning":"警告","notice":"通知"}},
+  "results": {"eyebrow":"即時比較","title":"全部產品","watch":"切換追蹤","none":"沒有優惠","offerCount":"{count} 個優惠","columns":{"product":"產品名稱 / 品牌","category":"分類","cheapest":"最低價商店 + 價格","spread":"價差","history":"走勢","trend":"趨勢","offer":"優惠","watch":"追蹤"}},
+  "watchlist": {"eyebrow":"追蹤項目","title":"追蹤清單","bulkLabel":"{count} 個追蹤產品","tabs":{"all":"全部","drops":"跌價","offers":"優惠","lowest90":"90日新低","shared":"共享"},"bulk":{"remove":"移除","share":"分享","compare":"比較"}},
+  "dashboard": {"stats":{"tracked":"追蹤中","priceDrops":"跌價項目","avgSaving":"平均節省 %","foodAlerts":"食安警示"},"topDifferences":"最大價差","recentDrops":"最新跌價","watchedDrops":"追蹤跌價","drop":"價格下降"},
+  "categories": {"items":"{count} 項產品","indexedHistory":"分類指數走線","indexBase":"指數（100 基準）"},
+  "drawer": {"close":"關閉抽屜","storePrices":"各店價格","store":"商店","current":"現價","previous":"前價","delta":"變動","history":"價格歷史","offers":"優惠","noOffers":"沒有進行中優惠","openHktv":"前往 HKTVmall"}
+}

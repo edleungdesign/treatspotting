@@ -1,0 +1,6 @@
+'use client';
+import {Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis} from 'recharts';
+import {useTranslations} from 'next-intl';
+import StorePill from '@/components/ui/StorePill';
+import type {CategorySummary, Locale} from '@/types/pricewatch';
+export default function CategoryHistoryView({summaries}: {summaries: CategorySummary[]; locale: Locale}) { const t = useTranslations('categories'); const chartData = summaries[0]?.indexedSeries ?? []; return <section className="pw-stack-lg"><div className="pw-card-grid">{summaries.map((summary) => <article key={summary.name} className="pw-panel pw-category-card"><span>{summary.name}</span><strong>{summary.avgDelta}%</strong><p>{t('items', {count: summary.itemCount})}</p><StorePill store={summary.cheapestStore} /></article>)}</div><section className="pw-panel"><div className="pw-section-head"><h2>{t('indexedHistory')}</h2></div><div className="pw-history-chart"><ResponsiveContainer width="100%" height="100%"><LineChart data={chartData}><XAxis dataKey="date" minTickGap={24} /><YAxis domain={[95, 110]} /><Tooltip formatter={(value) => [String(value ?? '—'), t('indexBase')]} labelFormatter={(label) => String(label)} /><Line type="monotone" dataKey="value" stroke="var(--color-primary)" strokeWidth={2.5} dot={false} /></LineChart></ResponsiveContainer></div></section></section>; }

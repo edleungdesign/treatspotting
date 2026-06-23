@@ -1,0 +1,8 @@
+'use client';
+import {useMemo} from 'react';
+import {useTranslations} from 'next-intl';
+import ResultsView from '@/components/features/pricewatch/ResultsView';
+import type {Locale, Product, WatchlistFilter} from '@/types/pricewatch';
+import {filterWatchlist} from '@/lib/pricewatch/utils';
+const tabs: WatchlistFilter[] = ['all','drops','offers','lowest90','shared'];
+export default function WatchlistView({products, locale, activeTab, onTabChange, onOpenProduct, onToggleWatch, onBulkAction}: {products: Product[]; locale: Locale; activeTab: WatchlistFilter; onTabChange: (tab: WatchlistFilter) => void; onOpenProduct: (product: Product) => void; onToggleWatch: (id: string) => void; onBulkAction: (action: 'remove' | 'share' | 'compare') => void;}) { const t = useTranslations('watchlist'); const filtered = useMemo(() => filterWatchlist(products, activeTab), [products, activeTab]); return <section className="pw-stack-lg"><div className="pw-panel"><div className="pw-section-head"><div><p className="pw-eyebrow">{t('eyebrow')}</p><h2>{t('title')}</h2></div></div><div className="pw-tabs">{tabs.map((tab) => <button key={tab} className={activeTab === tab ? 'is-active' : ''} onClick={() => onTabChange(tab)}>{t(`tabs.${tab}`)}</button>)}</div><div className="pw-bulk-bar"><span>{t('bulkLabel', {count: filtered.length})}</span><div><button onClick={() => onBulkAction('remove')}>{t('bulk.remove')}</button><button onClick={() => onBulkAction('share')}>{t('bulk.share')}</button><button onClick={() => onBulkAction('compare')}>{t('bulk.compare')}</button></div></div></div><ResultsView products={filtered} locale={locale} onOpenProduct={onOpenProduct} onToggleWatch={onToggleWatch} /></section>; }
