@@ -1,18 +1,20 @@
-# Pricewatch v5
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+</div>
 
-Clean whole-repo rebuild for a Next.js 16 + next-intl Hong Kong supermarket comparison prototype.
+# Run and deploy your AI Studio app
 
-## Stack
-- Next.js 16.2.9
-- React 19
-- next-intl 4.7.0
-- Recharts 3
-- lucide-react
-- clsx
+This contains everything you need to run your app locally.
 
-## Start
-```bash
-npm install
-npm run build
-npm run dev
-```
+View your app in AI Studio: https://ai.studio/apps/16b773c2-60db-451f-b579-a281e4a3e28c
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`

@@ -1,14 +1,146 @@
 'use client';
-import {useEffect, useMemo, useState} from 'react';
-import {useLocale, useTranslations} from 'next-intl';
-import {usePathname, useRouter} from '@/i18n/navigation';
-import AlertsList from '@/components/features/alerts/AlertsList';
-import CategoryHistoryView from '@/components/features/pricewatch/CategoryHistoryView';
+
+import React, { useState, useCallback, useMemo } from 'react';
+import { useLocale } from 'next-intl';
+import { useRouter, usePathname } from '@/i18n/navigation';
+import AppShell from './AppShell';
 import DashboardView from '@/components/features/pricewatch/DashboardView';
-import ProductDrawer from '@/components/features/pricewatch/ProductDrawer';
 import ResultsView from '@/components/features/pricewatch/ResultsView';
 import WatchlistView from '@/components/features/pricewatch/WatchlistView';
-import AppShell, {type QuickFilterKey} from '@/components/layout/AppShell';
-import type {AlertItem, HistoryRange, Locale, Product, ViewName, WatchlistFilter} from '@/types/pricewatch';
-import {availableStores, filterProducts, getCategorySummaries, getDashboardStats} from '@/lib/pricewatch/utils';
-export default function AppClient({initialProducts, initialAlerts}: {initialProducts: Product[]; initialAlerts: AlertItem[]}) { const locale = useLocale() as Locale; const router = useRouter(); const pathname = usePathname(); const t = useTranslations('appShell'); const [view, setView] = useState<ViewName>('dashboard'); const [products, setProducts] = useState(initialProducts); const [search, setSearch] = useState(''); const [store, setStore] = useState('all'); const [drawerProduct, setDrawerProduct] = useState<Product | null>(null); const [drawerOpen, setDrawerOpen] = useState(false); const [alertsOpen, setAlertsOpen] = useState(false); const [darkMode, setDarkMode] = useState(false); const [watchlistTab, setWatchlistTab] = useState<WatchlistFilter>('all'); const [range, setRange] = useState<HistoryRange>('30D'); const [quickFilters, setQuickFilters] = useState<Record<QuickFilterKey, boolean>>({watched:false,drops:false,offers:false,lowest90:false}); useEffect(() => { document.documentElement.dataset.theme = darkMode ? 'dark' : 'light'; }, [darkMode]); const filteredProducts = useMemo(() => { let next = filterProducts(products, search, 'all', store); if (quickFilters.watched) next = next.filter((product) => product.watched); if (quickFilters.offers) next = next.filter((product) => product.offers.length > 0); if (quickFilters.lowest90) next = next.filter((product) => product.lowest90); if (quickFilters.drops) next = next.filter((product) => product.prices.some((entry) => (entry.prevPrice ?? entry.price) > entry.price)); return next; }, [products, search, store, quickFilters]); const stats = useMemo(() => getDashboardStats(products, initialAlerts.length), [products, initialAlerts.length]); const categorySummaries = useMemo(() => getCategorySummaries(filteredProducts), [filteredProducts]); function toggleWatch(id: string) { setProducts((current) => current.map((product) => product.id === id ? {...product, watched: !product.watched} : product)); } function openProduct(product: Product) { setDrawerProduct(product); setDrawerOpen(true); } function toggleLocale() { const nextLocale: Locale = locale === 'en' ? 'zh-Hant' : 'en'; router.replace(pathname, {locale: nextLocale}); } function renderView() { if (alertsOpen) return <AlertsList alerts={initialAlerts} locale={locale} />; if (view === 'results') return <ResultsView products={filteredProducts} locale={locale} onOpenProduct={openProduct} onToggleWatch={toggleWatch} />; if (view === 'watchlist') return <WatchlistView products={filteredProducts} locale={locale} activeTab={watchlistTab} onTabChange={setWatchlistTab} onOpenProduct={openProduct} onToggleWatch={toggleWatch} onBulkAction={(action) => window.alert(t(`bulkToast.${action}`))} />; if (view === 'categories') return <CategoryHistoryView summaries={categorySummaries} locale={locale} />; return <DashboardView products={filteredProducts} locale={locale} stats={stats} onOpenProduct={openProduct} />; } return <><AppShell locale={locale} view={view} onViewChange={setView} query={search} onQueryChange={setSearch} stores={availableStores} activeStore={store} onStoreChange={setStore} quickFilters={quickFilters} onQuickFilterToggle={(key) => setQuickFilters((current) => ({...current, [key]: !current[key]}))} alertsCount={initialAlerts.length} alertsOpen={alertsOpen} onAlertsToggle={() => setAlertsOpen((current) => !current)} darkMode={darkMode} onDarkModeToggle={() => setDarkMode((current) => !current)} onLocaleToggle={toggleLocale}>{renderView()}</AppShell><ProductDrawer product={drawerProduct} open={drawerOpen} locale={locale} range={range} onRangeChange={setRange} onClose={() => setDrawerOpen(false)} /></>; }
+import CategoryHistoryView from '@/components/features/pricewatch/CategoryHistoryView';
+import ProductDrawer from '@/components/features/pricewatch/ProductDrawer';
+import AlertsList from '@/components/features/alerts/AlertsList';
+import { filterProducts } from '@/lib/pricewatch/utils';
+import type { AlertItem, Locale, Product, StoreName, ViewName } from '@/types/pricewatch';
+
+interface AppClientProps {
+  initialProducts: Product[];
+  initialAlerts: AlertItem[];
+  fromLive: boolean;
+}
+
+export default function AppClient({ initialProducts, initialAlerts, fromLive }: AppClientProps) {
+  const locale = useLocale() as Locale;
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // Core state engines
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [alerts] = useState<AlertItem[]>(initialAlerts);
+  const [view, setView] = useState<ViewName>('dashboard');
+  const [search, setSearch] = useState('');
+  const [activeStore, setActiveStore] = useState<StoreName | 'all'>('all');
+  const [quickFilter, setQuickFilter] = useState<string>('');
+  const [drawerProductId, setDrawerProductId] = useState<string | null>(null);
+  const [alertsOpen, setAlertsOpen] = useState(false);
+
+  // Toggle alert list display
+  const handleAlertsToggle = useCallback(() => {
+    setAlertsOpen((prev) => !prev);
+  }, []);
+
+  // Update locale dynamically through next-intl routing
+  const handleLocaleToggle = useCallback(() => {
+    const nextLocale = locale === 'en' ? 'zh-Hant' : 'en';
+    router.replace(pathname, { locale: nextLocale });
+  }, [locale, pathname, router]);
+
+  // Toggle bookmarked/watched items in list
+  const handleWatchToggle = useCallback((id: string) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, watched: !p.watched } : p))
+    );
+  }, []);
+
+  // Bulk remove untracked items
+  const handleBulkRemove = useCallback((ids: string[]) => {
+    setProducts((prev) =>
+      prev.map((p) => (ids.includes(p.id) ? { ...p, watched: false } : p))
+    );
+  }, []);
+
+  // Process filtered items for search/comparisons
+  const filteredProducts = useMemo(() => {
+    // 1. Core category & store filtration
+    let result = filterProducts(products, search, '', activeStore);
+
+    // 2. Secondary quick filters
+    if (quickFilter === 'watched') {
+      result = result.filter((p) => p.watched);
+    } else if (quickFilter === 'drops') {
+      result = result.filter(
+        (p) => p.trend === 'down' || p.prices.some((sp) => sp.prevPrice && sp.prevPrice > sp.price)
+      );
+    } else if (quickFilter === 'offers') {
+      result = result.filter((p) => p.offerBadge || p.prices.some((sp) => sp.offer));
+    } else if (quickFilter === 'lowest90') {
+      result = result.filter((p) => {
+        const minHistory = Math.min(...p.sparkline);
+        return p.cheapestPrice <= minHistory;
+      });
+    }
+
+    return result;
+  }, [products, search, activeStore, quickFilter]);
+
+  // Retrieve details of the product currently loaded in the drawer
+  const drawerProduct = useMemo(() => {
+    return products.find((p) => p.id === drawerProductId) || null;
+  }, [products, drawerProductId]);
+
+  return (
+    <>
+      <AppShell
+        locale={locale}
+        view={view}
+        search={search}
+        activeStore={activeStore}
+        quickFilter={quickFilter}
+        alerts={alerts}
+        alertsOpen={alertsOpen}
+        onViewChange={setView}
+        onSearchChange={setSearch}
+        onStoreChange={setActiveStore}
+        onQuickFilterChange={setQuickFilter}
+        onAlertsToggle={handleAlertsToggle}
+        onLocaleToggle={handleLocaleToggle}
+      >
+        {alertsOpen ? (
+          <AlertsList alerts={alerts} locale={locale} fromLive={fromLive} />
+        ) : view === 'dashboard' ? (
+          <DashboardView
+            products={filteredProducts}
+            alerts={alerts}
+            locale={locale}
+            onProductClick={setDrawerProductId}
+          />
+        ) : view === 'results' ? (
+          <ResultsView
+            products={filteredProducts}
+            locale={locale}
+            onProductClick={setDrawerProductId}
+            onWatchToggle={handleWatchToggle}
+          />
+        ) : view === 'watchlist' ? (
+          <WatchlistView
+            products={products}
+            locale={locale}
+            onProductClick={setDrawerProductId}
+            onWatchToggle={handleWatchToggle}
+            onBulkRemove={handleBulkRemove}
+          />
+        ) : (
+          <CategoryHistoryView products={products} locale={locale} />
+        )}
+      </AppShell>
+
+      {/* Slide-in details Drawer panel */}
+      <ProductDrawer
+        product={drawerProduct}
+        open={drawerProductId !== null}
+        onClose={() => setDrawerProductId(null)}
+        locale={locale}
+      />
+    </>
+  );
+}

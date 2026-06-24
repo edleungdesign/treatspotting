@@ -1,0 +1,6 @@
+{
+  "name": "Treatspotting",
+  "description": "Hong Kong Supermarket Price Comparison & Food Safety Alerts",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
