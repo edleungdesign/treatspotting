@@ -1,19 +1,164 @@
-import type {CategorySummary, DashboardStats, HistoryRange, Locale, PriceHistoryPoint, Product, StoreName, StorePrice, TrendDirection, WatchlistFilter} from '@/types/pricewatch';
-export const availableStores: StoreName[] = ['WELLCOME', 'PARKNSHOP', 'TASTE', 'AEON', 'HKTVMALL'];
-export function formatPrice(value: number, locale: Locale = 'en') { return new Intl.NumberFormat(locale === 'en' ? 'en-HK' : 'zh-Hant-HK', {style: 'currency', currency: 'HKD', minimumFractionDigits: 1, maximumFractionDigits: 1}).format(value); }
-export function formatPercent(value: number, locale: Locale = 'en') { return new Intl.NumberFormat(locale === 'en' ? 'en-HK' : 'zh-Hant-HK', {style: 'percent', maximumFractionDigits: 1}).format(value / 100); }
-export function formatDate(value: string, locale: Locale = 'en') { return new Intl.DateTimeFormat(locale === 'en' ? 'en-HK' : 'zh-Hant-HK', {month: 'short', day: 'numeric'}).format(new Date(value)); }
-export function getLowestPrice(product: Product) { return [...product.prices].sort((a, b) => a.price - b.price)[0] ?? null; }
-export function getHighestPrice(product: Product) { return [...product.prices].sort((a, b) => b.price - a.price)[0] ?? null; }
-export function getPriceDiff(product: Product) { const low = getLowestPrice(product); const high = getHighestPrice(product); if (!low || !high) return 0; return Number((high.price - low.price).toFixed(1)); }
-export function getSpreadPercent(product: Product) { const low = getLowestPrice(product); if (!low || low.price === 0) return 0; return Number(((getPriceDiff(product) / low.price) * 100).toFixed(1)); }
-export function getStoreDelta(price: StorePrice) { if (typeof price.prevPrice !== 'number') return 0; return Number((price.price - price.prevPrice).toFixed(1)); }
-export function getTrendDirection(product: Product): TrendDirection { const points = getCombinedHistory(product, '30D'); if (points.length < 2) return 'flat'; const first = points[0]?.price ?? 0; const last = points[points.length - 1]?.price ?? 0; if (last < first - 0.05) return 'down'; if (last > first + 0.05) return 'up'; return 'flat'; }
-export function uniqueCategories(products: Product[]) { return [...new Set(products.map((product) => product.category).filter(Boolean))]; }
-export function filterProducts(products: Product[], query: string, category: string, store: string) { const normalized = query.trim().toLowerCase(); return products.filter((product) => { const matchesQuery = !normalized || [product.name, product.brand, product.code].join(' ').toLowerCase().includes(normalized); const matchesCategory = category === 'all' || !category || product.category === category; const matchesStore = store === 'all' || !store || product.prices.some((entry) => entry.store === store); return matchesQuery && matchesCategory && matchesStore; }); }
-export function filterWatchlist(products: Product[], filter: WatchlistFilter) { const watched = products.filter((product) => product.watched); switch (filter) { case 'drops': return watched.filter((product) => getTrendDirection(product) === 'down'); case 'offers': return watched.filter((product) => product.offers.length > 0); case 'lowest90': return watched.filter((product) => product.lowest90); case 'shared': return watched.filter((product) => product.shared); default: return watched; } }
-export function getCombinedHistory(product: Product, range: HistoryRange): PriceHistoryPoint[] { const limit = range === '7D' ? 7 : range === '30D' ? 30 : 90; const bucket = new Map<string, number[]>(); Object.values(product.history).forEach((series) => { series.slice(-limit).forEach((point) => { const values = bucket.get(point.date) ?? []; values.push(point.price); bucket.set(point.date, values); }); }); return [...bucket.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, values]) => ({date, price: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1))})); }
-export function getCategorySummaries(products: Product[]): CategorySummary[] { return uniqueCategories(products).map((category) => { const items = products.filter((product) => product.category === category); const avgDelta = Number((items.reduce((sum, item) => sum + getSpreadPercent(item), 0) / Math.max(items.length, 1)).toFixed(1)); return {name: category, avgDelta, itemCount: items.length, cheapestStore: mostCommonStore(items.map((item) => getLowestPrice(item)?.store).filter(Boolean) as StoreName[]), indexedSeries: buildIndexedSeries(items)}; }); }
-export function getDashboardStats(products: Product[], alertsCount: number): DashboardStats { return {tracked: products.filter((product) => product.watched).length, priceDrops: products.filter((product) => getTrendDirection(product) === 'down').length, avgSavingsPct: Number((products.reduce((sum, product) => sum + getSpreadPercent(product), 0) / Math.max(products.length, 1)).toFixed(1)), foodAlerts: alertsCount}; }
-function mostCommonStore(stores: StoreName[]): StoreName { const counts = new Map<StoreName, number>(); stores.forEach((store) => counts.set(store, (counts.get(store) ?? 0) + 1)); return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'WELLCOME'; }
-function buildIndexedSeries(products: Product[]) { const grouped = new Map<string, number[]>(); products.forEach((product) => { getCombinedHistory(product, '30D').forEach((point) => { const values = grouped.get(point.date) ?? []; values.push(point.price); grouped.set(point.date, values); }); }); const averaged = [...grouped.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([date, values]) => ({date, avg: values.reduce((sum, value) => sum + value, 0) / values.length})); const base = averaged[0]?.avg ?? 1; return averaged.map((entry) => ({date: entry.date, value: Number(((entry.avg / base) * 100).toFixed(1))})); }
+import type { Product, AlertItem, StoreName } from '@/types/pricewatch';
+
+export function filterProducts(
+  products: Product[],
+  query: string,
+  category: string,
+  store: string
+): Product[] {
+  const normQuery = query.toLowerCase().trim();
+  
+  return products.filter((product) => {
+    // Search filter
+    if (normQuery) {
+      const nameEn = product.name.en.toLowerCase();
+      const nameZh = product.name['zh-Hant'].toLowerCase();
+      const brandEn = product.brand.en.toLowerCase();
+      const brandZh = product.brand['zh-Hant'].toLowerCase();
+      const code = product.code;
+
+      const matchesSearch =
+        nameEn.includes(normQuery) ||
+        nameZh.includes(normQuery) ||
+        brandEn.includes(normQuery) ||
+        brandZh.includes(normQuery) ||
+        code.includes(normQuery);
+
+      if (!matchesSearch) return false;
+    }
+
+    // Category filter
+    if (category && category !== 'all' && product.category !== category) {
+      return false;
+    }
+
+    // Store filter
+    if (store && store !== 'all') {
+      const hasStore = product.prices.some((p) => p.store === store);
+      if (!hasStore) return false;
+    }
+
+    return true;
+  });
+}
+
+export interface CategorySummary {
+  category: string;
+  itemCount: number;
+  avgDelta: number; // average % saving from prevPrice to current price
+  cheapestStore: StoreName;
+}
+
+export function getCategorySummaries(products: Product[]): CategorySummary[] {
+  const categoriesMap: Record<string, { prices: number[]; deltas: number[]; storeCounts: Record<StoreName, number> }> = {};
+
+  products.forEach((p) => {
+    if (!categoriesMap[p.category]) {
+      categoriesMap[p.category] = { prices: [], deltas: [], storeCounts: {} as Record<StoreName, number> };
+    }
+    const catObj = categoriesMap[p.category];
+
+    // Count items
+    catObj.prices.push(p.cheapestPrice);
+
+    // Save cheapest store count
+    const chStore = p.cheapestStore;
+    catObj.storeCounts[chStore] = (catObj.storeCounts[chStore] || 0) + 1;
+
+    // Calculate saving delta
+    p.prices.forEach((sp) => {
+      if (sp.prevPrice && sp.prevPrice > sp.price) {
+        const deltaPct = ((sp.prevPrice - sp.price) / sp.prevPrice) * 100;
+        catObj.deltas.push(deltaPct);
+      }
+    });
+  });
+
+  return Object.keys(categoriesMap).map((catName) => {
+    const catObj = categoriesMap[catName];
+    
+    // Determine average delta
+    const avgDelta = catObj.deltas.length > 0 
+      ? catObj.deltas.reduce((a, b) => a + b, 0) / catObj.deltas.length 
+      : 0;
+
+    // Determine cheapest store for this category
+    let bestStore: StoreName = 'WELLCOME';
+    let maxCount = -1;
+    (Object.keys(catObj.storeCounts) as StoreName[]).forEach((store) => {
+      if (catObj.storeCounts[store] > maxCount) {
+        maxCount = catObj.storeCounts[store];
+        bestStore = store;
+      }
+    });
+
+    return {
+      category: catName,
+      itemCount: catObj.prices.length,
+      avgDelta: Math.round(avgDelta * 10) / 10,
+      cheapestStore: bestStore
+    };
+  });
+}
+
+export interface DashboardStats {
+  trackedCount: number;
+  priceDropsCount: number;
+  avgSavingPercent: number;
+  foodAlertsCount: number;
+}
+
+export function getDashboardStats(products: Product[], alerts: AlertItem[]): DashboardStats {
+  const tracked = products.filter((p) => p.watched);
+  const trackedCount = tracked.length;
+
+  // Items currently exhibiting a price drop
+  let priceDropsCount = 0;
+  let totalSavingsPct = 0;
+  let savingsCount = 0;
+
+  products.forEach((p) => {
+    let hasDrop = false;
+    p.prices.forEach((sp) => {
+      if (sp.prevPrice && sp.prevPrice > sp.price) {
+        hasDrop = true;
+        const savingPct = ((sp.prevPrice - sp.price) / sp.prevPrice) * 100;
+        totalSavingsPct += savingPct;
+        savingsCount++;
+      }
+    });
+    if (hasDrop) {
+      priceDropsCount++;
+    }
+  });
+
+  const avgSavingPercent = savingsCount > 0 
+    ? Math.round((totalSavingsPct / savingsCount) * 10) / 10 
+    : 0;
+
+  const foodAlertsCount = alerts.filter(a => a.severity === 'recall' || a.severity === 'warning').length;
+
+  return {
+    trackedCount,
+    priceDropsCount,
+    avgSavingPercent,
+    foodAlertsCount
+  };
+}
+
+export function formatDate(dateString: string, locale: 'en' | 'zh-Hant'): string {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    if (locale === 'zh-Hant') {
+      return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
+    }
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  } catch {
+    return dateString;
+  }
+}

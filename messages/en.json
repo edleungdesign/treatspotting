@@ -1,9 +1,118 @@
 {
-  "appShell": {"eyebrow":"Hong Kong supermarket tracker","nav":"Primary navigation","searchPlaceholder":"Search product, brand or code","storeFilter":"Store filters","allStores":"All stores","alerts":"Food alerts","theme":"Theme","language":"Language","quick":{"watched":"Watched","drops":"Drops","offers":"Offers","lowest90":"Lowest 90D"},"views":{"dashboard":"Dashboard","results":"Results","watchlist":"Watchlist","categories":"Categories"},"bulkToast":{"remove":"Selected watched items removed.","share":"Watchlist link copied for sharing.","compare":"Comparison tray opened."}},
-  "alerts": {"eyebrow":"CFS notices","title":"Food alerts","source":"Open CFS announcement","severity":{"recall":"Recall","warning":"Warning","notice":"Notice"}},
-  "results": {"eyebrow":"Live comparison","title":"All products","watch":"Toggle watch","none":"No offers","offerCount":"{count} offers","columns":{"product":"Product name / brand","category":"Category","cheapest":"Cheapest store + price","spread":"Price spread","history":"Sparkline","trend":"Trend","offer":"Offer","watch":"Watch"}},
-  "watchlist": {"eyebrow":"Tracked items","title":"Watchlist","bulkLabel":"{count} watched products","tabs":{"all":"All","drops":"Price Drops","offers":"Offers","lowest90":"Lowest 90D","shared":"Shared"},"bulk":{"remove":"Remove","share":"Share","compare":"Compare"}},
-  "dashboard": {"stats":{"tracked":"Tracked","priceDrops":"Price drops","avgSaving":"Avg saving %","foodAlerts":"Food alerts"},"topDifferences":"Top price differences","recentDrops":"Recent drops","watchedDrops":"Watched drops","drop":"Price drop"},
-  "categories": {"items":"{count} items","indexedHistory":"Indexed category line","indexBase":"Index (100 base)"},
-  "drawer": {"close":"Close drawer","storePrices":"Store prices","store":"Store","current":"Current","previous":"Previous","delta":"Delta","history":"Price history","offers":"Offers","noOffers":"No active offers","openHktv":"Open on HKTVmall"}
+  "appShell": {
+    "eyebrow": "Hong Kong Supermarket",
+    "nav": "Main Navigation",
+    "views": {
+      "dashboard": "Dashboard",
+      "results": "Search Prices",
+      "watchlist": "My Watchlist",
+      "categories": "Category Trends"
+    },
+    "searchPlaceholder": "Search by product name, brand, or barcode...",
+    "storeFilter": "Filter by Supermarket Chain",
+    "allStores": "All Stores",
+    "quick": {
+      "watched": "Tracked Only",
+      "drops": "Price Drops",
+      "offers": "With Offers",
+      "lowest90": "Lowest in 90D"
+    },
+    "alerts": "Food Safety Alerts",
+    "theme": "Toggle Dark Mode",
+    "language": "Switch Language"
+  },
+  "dashboard": {
+    "title": "Supermarket Price Watch",
+    "subtitle": "Track and compare grocery prices in real-time across Hong Kong's major retail chains",
+    "liveIndicator": "Live Feed Connected",
+    "mockIndicator": "Using Offline Cached Data",
+    "kpi": {
+      "tracked": "Watched Items",
+      "drops": "Hot Price Drops",
+      "savings": "Avg. Savings",
+      "alerts": "Active Food Alerts"
+    },
+    "topDifferences": {
+      "title": "Top Price Spread Opportunities",
+      "desc": "Products with the largest price differences between supermarket chains.",
+      "product": "Product",
+      "spread": "Price Spread",
+      "cheapest": "Best Store"
+    },
+    "recentDrops": {
+      "title": "Top Price Drops Today",
+      "desc": "Greatest price reductions from their original listing.",
+      "store": "Supermarket",
+      "save": "Save"
+    }
+  },
+  "results": {
+    "title": "Supermarket Price Comparison",
+    "subtitle": "Showing {count} items found matching your filters",
+    "table": {
+      "product": "Product Details",
+      "cheapest": "Cheapest Price",
+      "spread": "Price Spread",
+      "history": "Price Trend",
+      "actions": "Track"
+    },
+    "spreadValue": "${amount}",
+    "noResults": "No products found. Try clearing your filters or search query."
+  },
+  "watchlist": {
+    "title": "My Watchlist",
+    "subtitle": "Monitor and manage your tracked supermarket items",
+    "tabs": {
+      "all": "All Tracked",
+      "drops": "Price Drops",
+      "offers": "With Discounts",
+      "lowest90": "Lowest in 90D",
+      "shared": "Shared Items"
+    },
+    "bulkBar": {
+      "selected": "{count} item selected | {count} items selected",
+      "remove": "Remove from Watchlist",
+      "share": "Share Selection",
+      "compare": "Compare Prices",
+      "shareSuccess": "Share link copied to clipboard!",
+      "compareSuccess": "Comparing selected item prices!"
+    }
+  },
+  "categories": {
+    "title": "Price Indices & Category History",
+    "subtitle": "Track price indexes over time to see general grocery inflation",
+    "chartTitle": "Supermarket Price Index (Base: 100 on June 1)",
+    "indexBase": "Price Index",
+    "stat": {
+      "count": "Total Items",
+      "saving": "Avg. Savings Opportunity",
+      "bestStore": "Cheapest Outlet"
+    }
+  },
+  "drawer": {
+    "externalLink": "View on HKTVmall",
+    "pricesHeader": "Price Comparison",
+    "store": "Store",
+    "price": "Price",
+    "diff": "Difference",
+    "offer": "Promotion",
+    "historyHeader": "Price History (7D / 30D / 90D)",
+    "offersHeader": "Active Special Offers",
+    "noOffers": "No special promotions currently active for this item.",
+    "code": "Barcode: {code}",
+    "category": "Category: {category}",
+    "brand": "Brand: {brand}"
+  },
+  "alerts": {
+    "title": "Centre for Food Safety Alerts",
+    "subtitle": "Real-time food recalls, allergy warnings, and safety announcements in Hong Kong",
+    "empty": "No active safety alerts at the moment.",
+    "loadError": "Could not connect to live food alerts feed.",
+    "link": "Official CFS Announcement",
+    "severity": {
+      "recall": "Product Recall",
+      "warning": "Safety Warning",
+      "notice": "Public Notice"
+    }
+  }
 }

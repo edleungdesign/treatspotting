@@ -3,11 +3,36 @@ import {getMessages, setRequestLocale} from 'next-intl/server';
 import {notFound} from 'next/navigation';
 import {routing} from '@/i18n/routing';
 import '@/app/globals.css';
-export function generateStaticParams() { return routing.locales.map((locale) => ({locale})); }
-export default async function LocaleLayout({children, params}: {children: React.ReactNode; params: Promise<{locale: string}>;}) {
-  const {locale} = await params;
-  if (!routing.locales.includes(locale as 'en' | 'zh-Hant')) notFound();
-  setRequestLocale(locale as 'en' | 'zh-Hant');
+
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({locale}));
+}
+
+type Props = {
+  children: React.ReactNode;
+  params: Promise<{locale: string}>;
+};
+
+export default async function LocaleLayout({children, params}: Props) {
+  const resolvedParams = await params;
+  const rawLocale = resolvedParams.locale;
+
+  if (!routing.locales.includes(rawLocale as any)) {
+    notFound();
+  }
+
+  const validLocale = rawLocale as (typeof routing.locales)[number];
+
+  setRequestLocale(validLocale);
   const messages = await getMessages();
-  return <html lang={locale}><body><NextIntlClientProvider messages={messages}>{children}</NextIntlClientProvider></body></html>;
+
+  return (
+    <html lang={validLocale} className="h-full">
+      <body className="h-full bg-slate-50 dark:bg-slate-950 transition-colors" suppressHydrationWarning>
+        <NextIntlClientProvider locale={validLocale} messages={messages}>
+          {children}
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
 }
