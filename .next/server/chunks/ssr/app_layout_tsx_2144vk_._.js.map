@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../app/layout.tsx"],"sourcesContent":["export default function RootLayout({children}: {children: React.ReactNode}) { return children; }\n"],"names":["RootLayout","children"],"mappings":"wDAAe,SAASA,AAAW,UAACC,CAAQ,CAA8B,EAAI,OAAOA,CAAU"}
