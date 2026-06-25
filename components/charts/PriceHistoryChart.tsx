@@ -24,7 +24,27 @@ const STORE_COLORS: Record<StoreName, string> = {
   PARKNSHOP: '#2563eb',  // Blue
   TASTE: '#10b981',      // Emerald
   AEON: '#9333ea',       // Purple
-  HKTVMALL: '#ea580c'    // Orange
+  HKTVMALL: '#ea580c',   // Orange
+  JASONS: '#0d9488',     // Teal
+  LUNGFUNG: '#db2777',   // Pink
+  DCHFOOD: '#d97706',    // Amber
+  WATSONS: '#0891b2',    // Cyan
+  MANNINGS: '#ea580c',   // Orange
+  SASA: '#c026d3'        // Fuchsia
+};
+
+const STORE_LABELS: Record<StoreName, string> = {
+  WELLCOME: 'Wellcome',
+  PARKNSHOP: 'PNS',
+  TASTE: 'TASTE',
+  AEON: 'AEON',
+  HKTVMALL: 'HKTVmall',
+  JASONS: 'Market Place',
+  LUNGFUNG: 'Lung Fung',
+  DCHFOOD: 'DCH Food',
+  WATSONS: 'Watsons',
+  MANNINGS: 'Mannings',
+  SASA: 'Sasa'
 };
 
 export default function PriceHistoryChart({ product, range, locale }: PriceHistoryChartProps) {
@@ -129,7 +149,7 @@ export default function PriceHistoryChart({ product, range, locale }: PriceHisto
               key={sp.store}
               type="monotone"
               dataKey={sp.store}
-              name={sp.store === 'WELLCOME' ? 'Wellcome' : sp.store === 'PARKNSHOP' ? 'PNS' : sp.store}
+              name={STORE_LABELS[sp.store] || sp.store}
               stroke={STORE_COLORS[sp.store] || '#64748b'}
               strokeWidth={2}
               dot={false}

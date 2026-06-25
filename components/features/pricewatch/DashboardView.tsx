@@ -14,9 +14,10 @@ interface DashboardViewProps {
   alerts: AlertItem[];
   locale: Locale;
   onProductClick: (id: string) => void;
+  onStatClick?: (statType: 'tracked' | 'drops' | 'savings' | 'alerts') => void;
 }
 
-export default function DashboardView({ products, alerts, locale, onProductClick }: DashboardViewProps) {
+export default function DashboardView({ products, alerts, locale, onProductClick, onStatClick }: DashboardViewProps) {
   const t = useTranslations('dashboard');
 
   const stats = useMemo(() => getDashboardStats(products, alerts), [products, alerts]);
@@ -78,12 +79,15 @@ export default function DashboardView({ products, alerts, locale, onProductClick
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        <div 
+          onClick={() => onStatClick?.('tracked')}
+          className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-md transition-all active:scale-[0.98] group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider group-hover:text-blue-500 transition-colors">
               {t('kpi.tracked')}
             </span>
-            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-xl">
+            <div className="p-2 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all">
               <BookmarkCheck size={20} />
             </div>
           </div>
@@ -91,17 +95,23 @@ export default function DashboardView({ products, alerts, locale, onProductClick
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {stats.trackedCount}
             </span>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Items saved in list</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+              <span>Items saved in list</span>
+              <span className="text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity font-bold">→</span>
+            </p>
           </div>
         </div>
 
         {/* Card 2 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        <div 
+          onClick={() => onStatClick?.('drops')}
+          className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between cursor-pointer hover:border-emerald-400 dark:hover:border-emerald-500 hover:shadow-md transition-all active:scale-[0.98] group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider group-hover:text-emerald-500 transition-colors">
               {t('kpi.drops')}
             </span>
-            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl">
+            <div className="p-2 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 rounded-xl group-hover:bg-emerald-500 group-hover:text-white transition-all">
               <ShoppingBag size={20} />
             </div>
           </div>
@@ -109,17 +119,23 @@ export default function DashboardView({ products, alerts, locale, onProductClick
             <span className="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 tracking-tight">
               {stats.priceDropsCount}
             </span>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Supermarkets price cuts</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+              <span>Supermarkets price cuts</span>
+              <span className="text-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity font-bold">→</span>
+            </p>
           </div>
         </div>
 
         {/* Card 3 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        <div 
+          onClick={() => onStatClick?.('savings')}
+          className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between cursor-pointer hover:border-rose-400 dark:hover:border-rose-500 hover:shadow-md transition-all active:scale-[0.98] group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider group-hover:text-rose-500 transition-colors">
               {t('kpi.savings')}
             </span>
-            <div className="p-2 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-xl">
+            <div className="p-2 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-all">
               <Percent size={20} />
             </div>
           </div>
@@ -127,17 +143,23 @@ export default function DashboardView({ products, alerts, locale, onProductClick
             <span className="text-2xl sm:text-3xl font-extrabold text-rose-600 dark:text-rose-400 tracking-tight">
               {stats.avgSavingPercent}%
             </span>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Average discount depth</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+              <span>Average discount depth</span>
+              <span className="text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity font-bold">→</span>
+            </p>
           </div>
         </div>
 
         {/* Card 4 */}
-        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between">
+        <div 
+          onClick={() => onStatClick?.('alerts')}
+          className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between cursor-pointer hover:border-amber-400 dark:hover:border-amber-500 hover:shadow-md transition-all active:scale-[0.98] group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider group-hover:text-amber-500 transition-colors">
               {t('kpi.alerts')}
             </span>
-            <div className="p-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-xl">
+            <div className="p-2 bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-all">
               <BellRing size={20} className={stats.foodAlertsCount > 0 ? 'animate-bounce' : ''} />
             </div>
           </div>
@@ -145,7 +167,10 @@ export default function DashboardView({ products, alerts, locale, onProductClick
             <span className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
               {stats.foodAlertsCount}
             </span>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Active CFS warnings</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+              <span>Active CFS warnings</span>
+              <span className="text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity font-bold">→</span>
+            </p>
           </div>
         </div>
       </div>

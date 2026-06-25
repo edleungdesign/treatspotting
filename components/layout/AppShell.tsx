@@ -36,7 +36,20 @@ interface AppShellProps {
   children: React.ReactNode;
 }
 
-const STORES: Array<StoreName | 'all'> = ['all', 'WELLCOME', 'PARKNSHOP', 'TASTE', 'AEON', 'HKTVMALL'];
+const STORES: Array<StoreName | 'all'> = [
+  'all',
+  'WELLCOME',
+  'PARKNSHOP',
+  'TASTE',
+  'AEON',
+  'HKTVMALL',
+  'JASONS',
+  'LUNGFUNG',
+  'DCHFOOD',
+  'WATSONS',
+  'MANNINGS',
+  'SASA'
+];
 
 export default function AppShell({
   locale,

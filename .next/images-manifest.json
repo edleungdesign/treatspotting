@@ -12,6 +12,7 @@
       3840
     ],
     "imageSizes": [
+      16,
       32,
       48,
       64,
@@ -25,28 +26,23 @@
     "loaderFile": "",
     "domains": [],
     "disableStaticImages": false,
-    "minimumCacheTTL": 14400,
+    "minimumCacheTTL": 60,
     "formats": [
       "image/webp"
     ],
-    "maximumRedirects": 3,
     "maximumResponseBody": 50000000,
-    "dangerouslyAllowLocalIP": false,
     "dangerouslyAllowSVG": false,
     "contentSecurityPolicy": "script-src 'none'; frame-src 'none'; sandbox;",
     "contentDispositionType": "attachment",
-    "localPatterns": [
+    "remotePatterns": [
       {
-        "pathname": "^(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?)\\/?)$",
-        "search": ""
+        "protocol": "https",
+        "hostname": "^(?:^(?:picsum\\.photos)$)$",
+        "port": "",
+        "pathname": "^(?:\\/(?!\\.{1,2}(?:\\/|$))(?:(?:(?!(?:^|\\/)\\.{1,2}(?:\\/|$)).)*?))$"
       }
     ],
-    "remotePatterns": [],
-    "qualities": [
-      75
-    ],
     "unoptimized": false,
-    "customCacheHandler": false,
     "sizes": [
       640,
       750,
@@ -56,6 +52,7 @@
       1920,
       2048,
       3840,
+      16,
       32,
       48,
       64,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useLocale } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/navigation';
 import AppShell from './AppShell';
@@ -33,6 +33,45 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
   const [quickFilter, setQuickFilter] = useState<string>('');
   const [drawerProductId, setDrawerProductId] = useState<string | null>(null);
   const [alertsOpen, setAlertsOpen] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Load watchlist from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pricewatch_watchlist');
+      if (stored) {
+        const watchedIds: string[] = JSON.parse(stored);
+        if (Array.isArray(watchedIds) && watchedIds.length > 0) {
+          setTimeout(() => {
+            setProducts((prev) =>
+              prev.map((p) => ({
+                ...p,
+                watched: watchedIds.includes(p.id),
+              }))
+            );
+            setIsHydrated(true);
+          }, 0);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load watchlist from localStorage', e);
+    }
+    setTimeout(() => {
+      setIsHydrated(true);
+    }, 0);
+  }, []);
+
+  // Save watchlist to localStorage when products state changes
+  useEffect(() => {
+    if (!isHydrated) return;
+    try {
+      const watchedIds = products.filter((p) => p.watched).map((p) => p.id);
+      localStorage.setItem('pricewatch_watchlist', JSON.stringify(watchedIds));
+    } catch (e) {
+      console.error('Failed to save watchlist to localStorage', e);
+    }
+  }, [products, isHydrated]);
 
   // Toggle alert list display
   const handleAlertsToggle = useCallback(() => {
@@ -57,6 +96,41 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
     setProducts((prev) =>
       prev.map((p) => (ids.includes(p.id) ? { ...p, watched: false } : p))
     );
+  }, []);
+
+  // Handle KPI card clicks from the Dashboard
+  const handleStatClick = useCallback((statType: 'tracked' | 'drops' | 'savings' | 'alerts') => {
+    if (statType === 'tracked') {
+      setQuickFilter('watched');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'drops') {
+      setQuickFilter('drops');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'savings') {
+      setQuickFilter('offers');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'alerts') {
+      setAlertsOpen(true);
+    }
+  }, []);
+
+  // Handle clickable categories and breadcrumbs
+  const handleCategoryClick = useCallback((category: string, store?: StoreName | 'all') => {
+    setSearch(category);
+    if (store) {
+      setActiveStore(store);
+    } else {
+      setActiveStore('all');
+    }
+    setQuickFilter('');
+    setView('results');
+    setDrawerProductId(null); // Close the details drawer
   }, []);
 
   // Process filtered items for search/comparisons
@@ -113,6 +187,7 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
             alerts={alerts}
             locale={locale}
             onProductClick={setDrawerProductId}
+            onStatClick={handleStatClick}
           />
         ) : view === 'results' ? (
           <ResultsView
@@ -130,7 +205,11 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
             onBulkRemove={handleBulkRemove}
           />
         ) : (
-          <CategoryHistoryView products={products} locale={locale} />
+          <CategoryHistoryView 
+            products={products} 
+            locale={locale} 
+            onCategoryClick={handleCategoryClick}
+          />
         )}
       </AppShell>
 
@@ -140,6 +219,8 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
         open={drawerProductId !== null}
         onClose={() => setDrawerProductId(null)}
         locale={locale}
+        onWatchToggle={handleWatchToggle}
+        onCategoryClick={handleCategoryClick}
       />
     </>
   );
