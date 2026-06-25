@@ -32,9 +32,36 @@ const CATEGORY_COLORS = [
   '#06b6d4', // cyan
 ];
 
+const CATEGORY_CODES: Record<string, string> = {
+  'Rice & Grains': 'RICE',
+  'Dairy & Chilled': 'DAIRY',
+  'Cooking Oil & Condiments': 'OILS',
+  'Noodles & Pasta': 'PASTA',
+  'Beverages': 'BEV',
+  'Household': 'HOUSE',
+  'Canned Food': 'CANNED',
+  'Baby Care': 'BABY',
+  'Personal Care': 'PERS',
+};
+
+function getCategoryCode(cat: string): string {
+  if (CATEGORY_CODES[cat]) {
+    return CATEGORY_CODES[cat];
+  }
+  const cleaned = cat.replace('&', '').replace('and', '').replace(/\s+/g, ' ').trim();
+  const words = cleaned.split(' ');
+  if (words.length === 1) {
+    return words[0].substring(0, 5).toUpperCase();
+  } else if (words.length >= 2) {
+    return (words[0].substring(0, 3) + '-' + words[1].substring(0, 3)).toUpperCase();
+  }
+  return cat.toUpperCase();
+}
+
 export default function CategoryHistoryView({ products, locale, onCategoryClick }: CategoryHistoryViewProps) {
   const t = useTranslations('categories');
   const [mounted, setMounted] = useState(false);
+  const [period, setPeriod] = useState<'30D' | '90D' | '180D' | '1Y' | 'ALL'>('90D');
 
   useEffect(() => {
     setTimeout(() => {
@@ -49,31 +76,57 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
     const dates = [];
     const now = new Date();
     
-    // Core categories in our system
-    const categoriesList = Array.from(new Set(products.map((p) => p.category))).slice(0, 5);
+    // Core categories synchronized with the summaries card list
+    const categoriesList = summaries.map((s) => s.category);
 
-    for (let i = 14; i >= 0; i--) {
+    let pointCount = 15;
+    let daysInterval = 6;
+
+    if (period === '30D') {
+      pointCount = 15;
+      daysInterval = 2;
+    } else if (period === '90D') {
+      pointCount = 15;
+      daysInterval = 6;
+    } else if (period === '180D') {
+      pointCount = 15;
+      daysInterval = 12;
+    } else if (period === '1Y') {
+      pointCount = 12;
+      daysInterval = 30;
+    } else if (period === 'ALL') {
+      pointCount = 12;
+      daysInterval = 60;
+    }
+
+    for (let i = pointCount - 1; i >= 0; i--) {
       const date = new Date(now);
-      date.setDate(now.getDate() - i * 3); // 15 points spaced 3 days apart (approx 45 days of index)
+      date.setDate(now.getDate() - i * daysInterval);
 
-      const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      let dateStr = '';
+      if (period === '1Y' || period === 'ALL') {
+        dateStr = date.toLocaleDateString(locale === 'zh-Hant' ? 'zh-HK' : 'en-US', { month: 'short', year: '2-digit' });
+      } else {
+        dateStr = date.toLocaleDateString(locale === 'zh-Hant' ? 'zh-HK' : 'en-US', { month: 'short', day: 'numeric' });
+      }
+
       const point: any = { date: dateStr };
 
       categoriesList.forEach((cat, index) => {
-        // Base category trend. Start at 100 on June 1st.
-        // Slight drift downwards (representing drops) or upwards.
         const baseTrend = 100;
-        const drift = (14 - i) * (index % 2 === 0 ? -0.2 : 0.15);
-        const wave = Math.sin(i * 1.2 + index) * 1.0;
+        const driftDirection = index % 2 === 0 ? -0.15 : 0.12;
+        const drift = (pointCount - 1 - i) * driftDirection;
+        const wave = Math.sin(i * 1.5 + index) * 1.2;
+        const seasonal = (period === '1Y' || period === 'ALL') ? Math.cos(i * 0.8 + index) * 2.0 : 0;
         
-        point[cat] = Math.round((baseTrend + drift + wave) * 10) / 10;
+        point[cat] = Math.round((baseTrend + drift + wave + seasonal) * 10) / 10;
       });
 
       dates.push(point);
     }
 
     return { dates, categoriesList };
-  }, [products]);
+  }, [summaries, period, locale]);
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-8" id="category-history-view">
@@ -131,9 +184,28 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
       {/* Recharts Price Index over Time */}
       <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm space-y-4">
-        <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
-          {t('chartTitle')}
-        </h3>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight">
+            {t('chartTitle')}
+          </h3>
+          
+          {/* Stock-style period selector */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-100 dark:border-slate-800/80 self-start sm:self-auto">
+            {(['30D', '90D', '180D', '1Y', 'ALL'] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${
+                  period === p
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {!mounted ? (
           <div className="h-80 w-full flex items-center justify-center bg-slate-50/50 dark:bg-slate-900/10 rounded-2xl border border-slate-100 animate-pulse">
@@ -157,7 +229,7 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
                   domain={['dataMin - 1', 'dataMax + 1']}
                 />
                 <Tooltip
-                  formatter={(value) => [String(value ?? '—'), t('indexBase')]}
+                  formatter={(value, name) => [String(value ?? '—'), name]}
                   labelStyle={{ fontWeight: 'bold', color: '#1e293b' }}
                   contentStyle={{
                     backgroundColor: 'rgba(255, 255, 255, 0.95)',
@@ -178,6 +250,7 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
                     key={cat}
                     type="monotone"
                     dataKey={cat}
+                    name={getCategoryCode(cat)}
                     stroke={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
                     strokeWidth={2.5}
                     dot={false}
