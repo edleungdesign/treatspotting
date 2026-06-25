@@ -72,7 +72,7 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
   const summaries = useMemo(() => getCategorySummaries(products), [products]);
 
-  // Generate indexed time series data per category starting at 100
+    // Generate indexed time series data per category starting at 100
   const chartData = useMemo(() => {
     const dates = [];
     const now = new Date();
@@ -82,23 +82,6 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
     let pointCount = 15;
     let daysInterval = 6;
-
-    // Period configurations for realistic retail market price indexes
-    const periodConfigs: Record<string, {
-      driftCoeff: number;
-      waveFreq: number;
-      waveAmp: number;
-      noiseAmp: number;
-      baseValue: number;
-    }> = {
-      '30D': { driftCoeff: -0.05, waveFreq: 0.95, waveAmp: 0.8, noiseAmp: 0.3, baseValue: 101.2 },
-      '90D': { driftCoeff: 0.12, waveFreq: 0.55, waveAmp: 1.4, noiseAmp: 0.5, baseValue: 99.4 },
-      '180D': { driftCoeff: -0.16, waveFreq: 0.38, waveAmp: 2.1, noiseAmp: 0.7, baseValue: 102.3 },
-      '1Y': { driftCoeff: 0.28, waveFreq: 0.22, waveAmp: 3.4, noiseAmp: 1.1, baseValue: 97.8 },
-      'ALL': { driftCoeff: -0.32, waveFreq: 0.14, waveAmp: 4.8, noiseAmp: 1.6, baseValue: 104.5 },
-    };
-
-    const config = periodConfigs[period] || periodConfigs['90D'];
 
     if (period === '30D') {
       pointCount = 15;
@@ -119,7 +102,8 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
     for (let i = pointCount - 1; i >= 0; i--) {
       const date = new Date(now);
-      date.setDate(now.getDate() - i * daysInterval);
+      const daysAgo = i * daysInterval;
+      date.setDate(now.getDate() - daysAgo);
 
       let dateStr = '';
       if (period === '1Y' || period === 'ALL') {
@@ -132,25 +116,42 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
       categoriesList.forEach((cat, index) => {
         // Generate a stable seed from category name
-        const seed = cat.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + index * 13;
+        const seed = cat.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + index * 17;
         
-        // Define unique trajectory shapes for each category to prevent overlap
-        const driftSign = index % 3 === 0 ? -1.0 : (index % 3 === 1 ? 1.0 : 0.2);
-        const catFreqScale = 0.85 + (index % 4) * 0.12;
+        // Let t represent absolute days forward (epoch relative to today)
+        const t = 1000 - daysAgo;
+
+        // Base price index value
+        const baseValue = 100.0 + (seed % 6) - 3;
+
+        // Long-term linear drift
+        const driftSign = index % 3 === 0 ? -1.0 : (index % 3 === 1 ? 1.0 : 0.3);
+        const driftRate = 0.008 * driftSign;
+        const drift = (t - 500) * driftRate;
+
+        // Long term seasonal wave (~150 to 190 days)
+        const longFreq = 2 * Math.PI / (150 + (seed % 40));
+        const longAmp = 2.5 + (seed % 3) * 0.5;
+        const longWave = Math.sin(t * longFreq + (seed % 5)) * longAmp;
+
+        // Medium term supply fluctuations (~25 to 33 days)
+        const medFreq = 2 * Math.PI / (25 + (seed % 8));
+        const medAmp = 1.0 + (seed % 2) * 0.3;
+        const medWave = Math.sin(t * medFreq + (seed % 3)) * medAmp;
+
+        // Weekly promotions wave (~7 days)
+        const shortFreq = 2 * Math.PI / 7;
+        const shortAmp = 0.4 + (seed % 2) * 0.2;
+        const shortWave = Math.sin(t * shortFreq + (seed % 2)) * shortAmp;
+
+        // Deterministic daily noise based purely on daysAgo and seed
+        const noiseVal = Math.sin(daysAgo * 12.9898 + seed * 78.233) * 43758.5453;
+        const noise = (noiseVal - Math.floor(noiseVal) - 0.5) * 0.6;
+
+        // Combine into a realistic, deterministic price index value
+        let val = baseValue + drift + longWave + medWave + shortWave + noise;
         
-        // Compute drift over the selected period points
-        const drift = (pointCount - 1 - i) * config.driftCoeff * driftSign;
-        
-        // Compute cyclic oscillations (representing standard promotions or supply fluctuations)
-        const wave = Math.sin((i + seed % 10) * config.waveFreq * catFreqScale) * config.waveAmp;
-        
-        // Short-term noise
-        const noise = Math.cos((i * 2.3 + seed) * 1.5) * config.noiseAmp;
-        
-        // Combine into a realistic starting baseline
-        let val = config.baseValue + drift + wave + noise;
-        
-        // Limit to a standard retail price index range
+        // Limit to standard retail index bounds
         val = Math.max(88, Math.min(115, val));
         
         point[cat] = Math.round(val * 10) / 10;
