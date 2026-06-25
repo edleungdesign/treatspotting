@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { Star, StarOff, HelpCircle, ArrowRight } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Star, StarOff, HelpCircle, ArrowRight, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import StorePill from '@/components/ui/StorePill';
 import PriceBadge from '@/components/ui/PriceBadge';
@@ -17,8 +17,45 @@ interface ResultsViewProps {
   onWatchToggle: (id: string) => void;
 }
 
+type SortField = 'name' | 'price' | 'spread';
+type SortOrder = 'asc' | 'desc';
+
 export default function ResultsView({ products, locale, onProductClick, onWatchToggle }: ResultsViewProps) {
   const t = useTranslations('results');
+  const [sortField, setSortField] = useState<SortField>('price');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  const handleHeaderClick = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      if (sortField === 'price') {
+        return sortOrder === 'asc'
+          ? a.cheapestPrice - b.cheapestPrice
+          : b.cheapestPrice - a.cheapestPrice;
+      }
+      if (sortField === 'name') {
+        const nameA = (a.name[locale] || '').toLowerCase();
+        const nameB = (b.name[locale] || '').toLowerCase();
+        return sortOrder === 'asc'
+          ? nameA.localeCompare(nameB, locale === 'zh-Hant' ? 'zh-HK' : 'en')
+          : nameB.localeCompare(nameA, locale === 'zh-Hant' ? 'zh-HK' : 'en');
+      }
+      if (sortField === 'spread') {
+        return sortOrder === 'asc'
+          ? a.priceSpread - b.priceSpread
+          : b.priceSpread - a.priceSpread;
+      }
+      return 0;
+    });
+  }, [products, sortField, sortOrder, locale]);
 
   if (products.length === 0) {
     return (
@@ -31,7 +68,7 @@ export default function ResultsView({ products, locale, onProductClick, onWatchT
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 space-y-4" id="results-view">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {t('title')}
@@ -40,11 +77,33 @@ export default function ResultsView({ products, locale, onProductClick, onWatchT
             {t('subtitle', { count: products.length })}
           </p>
         </div>
+
+        {/* Sort Controls */}
+        <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded-xl border border-slate-100 dark:border-slate-800">
+          <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider whitespace-nowrap">
+            Sort By:
+          </span>
+          <select
+            value={`${sortField}-${sortOrder}`}
+            onChange={(e) => {
+              const [field, order] = e.target.value.split('-');
+              setSortField(field as SortField);
+              setSortOrder(order as SortOrder);
+            }}
+            className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-transparent border-none focus:outline-hidden cursor-pointer py-0.5"
+          >
+            <option value="price-asc">Price: Lowest to Highest</option>
+            <option value="price-desc">Price: Highest to Lowest</option>
+            <option value="name-asc">Product Name: A to Z</option>
+            <option value="name-desc">Product Name: Z to A</option>
+            <option value="spread-desc">Price Spread: Highest first</option>
+          </select>
+        </div>
       </div>
 
       {/* MOBILE LIST LAYOUT (< 640px) */}
       <div className="block sm:hidden space-y-4">
-        {products.map((p) => (
+        {sortedProducts.map((p) => (
           <div
             key={p.id}
             className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/80 rounded-2xl p-4 shadow-sm relative flex flex-col gap-3 hover:border-slate-200 transition-all active:scale-[0.98]"
@@ -121,15 +180,54 @@ export default function ResultsView({ products, locale, onProductClick, onWatchT
         <table className="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
           <thead>
             <tr className="text-left text-xs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider bg-slate-50/50 dark:bg-slate-900/20">
-              <th scope="col" className="px-6 py-4">{t('table.product')}</th>
-              <th scope="col" className="px-6 py-4">{t('table.cheapest')}</th>
-              <th scope="col" className="px-6 py-4">{t('table.spread')}</th>
+              <th 
+                scope="col" 
+                className="px-6 py-4 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300 transition-colors select-none group"
+                onClick={() => handleHeaderClick('name')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>{t('table.product')}</span>
+                  {sortField === 'name' ? (
+                    sortOrder === 'asc' ? <ArrowUp size={14} className="text-blue-500" /> : <ArrowDown size={14} className="text-blue-500" />
+                  ) : (
+                    <ArrowUpDown size={14} className="opacity-40 group-hover:opacity-100 text-slate-400 dark:text-slate-600 transition-opacity" />
+                  )}
+                </div>
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-4 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300 transition-colors select-none group"
+                onClick={() => handleHeaderClick('price')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>{t('table.cheapest')}</span>
+                  {sortField === 'price' ? (
+                    sortOrder === 'asc' ? <ArrowUp size={14} className="text-blue-500" /> : <ArrowDown size={14} className="text-blue-500" />
+                  ) : (
+                    <ArrowUpDown size={14} className="opacity-40 group-hover:opacity-100 text-slate-400 dark:text-slate-600 transition-opacity" />
+                  )}
+                </div>
+              </th>
+              <th 
+                scope="col" 
+                className="px-6 py-4 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300 transition-colors select-none group"
+                onClick={() => handleHeaderClick('spread')}
+              >
+                <div className="flex items-center gap-1.5">
+                  <span>{t('table.spread')}</span>
+                  {sortField === 'spread' ? (
+                    sortOrder === 'asc' ? <ArrowUp size={14} className="text-blue-500" /> : <ArrowDown size={14} className="text-blue-500" />
+                  ) : (
+                    <ArrowUpDown size={14} className="opacity-40 group-hover:opacity-100 text-slate-400 dark:text-slate-600 transition-opacity" />
+                  )}
+                </div>
+              </th>
               <th scope="col" className="px-6 py-4">{t('table.history')}</th>
               <th scope="col" className="px-6 py-4 text-center">{t('table.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-            {products.map((p) => (
+            {sortedProducts.map((p) => (
               <tr
                 key={p.id}
                 onClick={() => onProductClick(p.id)}

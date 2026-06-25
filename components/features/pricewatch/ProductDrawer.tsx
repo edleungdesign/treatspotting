@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, ExternalLink, Sparkles, Tag, ShoppingCart } from 'lucide-react';
+import { X, ExternalLink, Sparkles, Tag, ShoppingCart, Star } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import StorePill from '@/components/ui/StorePill';
 import PriceBadge from '@/components/ui/PriceBadge';
@@ -13,9 +13,11 @@ interface ProductDrawerProps {
   open: boolean;
   onClose: () => void;
   locale: Locale;
+  onWatchToggle?: (id: string) => void;
+  onCategoryClick?: (category: string) => void;
 }
 
-export default function ProductDrawer({ product, open, onClose, locale }: ProductDrawerProps) {
+export default function ProductDrawer({ product, open, onClose, locale, onWatchToggle, onCategoryClick }: ProductDrawerProps) {
   const t = useTranslations('drawer');
   const [range, setRange] = useState<HistoryRange>('30D');
 
@@ -24,10 +26,11 @@ export default function ProductDrawer({ product, open, onClose, locale }: Produc
   // Find cheapest price
   const cheapestPrice = product.cheapestPrice;
 
-  // External HKTVmall Search Link based on product code or name
-  const hktvmallSearchUrl = `https://www.hktvmall.com/hktv/en/search_a?keyword=${encodeURIComponent(
-    product.code || product.name.en
-  )}`;
+  // External HKTVmall Search Link based on brand name + product name for maximum realworld compatibility
+  const brandName = product.brand[locale] || product.brand.en || '';
+  const productName = product.name[locale] || product.name.en || '';
+  const queryStr = `${brandName} ${productName}`.trim();
+  const hktvmallSearchUrl = `https://www.hktvmall.com/hktv/en/search_a?keyword=${encodeURIComponent(queryStr)}`;
 
   return (
     <div
@@ -42,21 +45,70 @@ export default function ProductDrawer({ product, open, onClose, locale }: Produc
       >
         {/* Drawer Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 sticky top-0 bg-white dark:bg-slate-950 z-10">
-          <div className="space-y-0.5">
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              {product.category}
-            </span>
+          <div className="space-y-1 max-w-[80%]">
+            <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              {product.category1 && (
+                <button
+                  onClick={() => onCategoryClick?.(product.category1![locale] || product.category1!.en)}
+                  className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors text-left"
+                >
+                  {product.category1[locale] || product.category1.en}
+                </button>
+              )}
+              {product.category2 && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">&gt;</span>
+                  <button
+                    onClick={() => onCategoryClick?.(product.category2![locale] || product.category2!.en)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors text-left"
+                  >
+                    {product.category2[locale] || product.category2.en}
+                  </button>
+                </>
+              )}
+              {product.category3 && (
+                <>
+                  <span className="text-slate-300 dark:text-slate-700">&gt;</span>
+                  <button
+                    onClick={() => onCategoryClick?.(product.category3![locale] || product.category3!.en)}
+                    className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors text-left"
+                  >
+                    {product.category3[locale] || product.category3.en}
+                  </button>
+                </>
+              )}
+              {!product.category1 && (
+                <button
+                  onClick={() => onCategoryClick?.(product.category)}
+                  className="hover:text-blue-600 dark:hover:text-blue-400 hover:underline transition-colors text-left"
+                >
+                  {product.category}
+                </button>
+              )}
+            </div>
             <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight line-clamp-1">
               {product.name[locale]}
             </h2>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 transition-colors"
-            aria-label="Close drawer"
-          >
-            <X size={20} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {onWatchToggle && (
+              <button
+                onClick={() => onWatchToggle(product.id)}
+                className="p-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 text-amber-500 transition-colors"
+                aria-label={product.watched ? "Remove from watchlist" : "Add to watchlist"}
+                title={product.watched ? "Remove from watchlist" : "Add to watchlist"}
+              >
+                <Star size={20} fill={product.watched ? '#f59e0b' : 'none'} />
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-full hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-400 dark:text-slate-500 hover:text-slate-600 transition-colors"
+              aria-label="Close drawer"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
 
         {/* Drawer Content */}
@@ -154,13 +206,26 @@ export default function ProductDrawer({ product, open, onClose, locale }: Produc
             <PriceHistoryChart product={product} range={range} locale={locale} />
           </div>
 
-          {/* External Search Link */}
-          <div className="pt-4">
+          {/* Action Buttons */}
+          <div className="pt-4 flex flex-col sm:flex-row gap-3">
+            {onWatchToggle && (
+              <button
+                onClick={() => onWatchToggle(product.id)}
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-xs sm:text-sm font-extrabold transition-all duration-150 border shadow-xs active:scale-95 ${
+                  product.watched
+                    ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100/50 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-400'
+                    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/80'
+                }`}
+              >
+                <Star size={14} fill={product.watched ? 'currentColor' : 'none'} className="text-amber-500" />
+                <span>{product.watched ? 'Stop Tracking' : 'Track Price'}</span>
+              </button>
+            )}
             <a
               href={hktvmallSearchUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs sm:text-sm font-extrabold transition-all duration-150 shadow-md shadow-orange-500/20"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-orange-600 hover:bg-orange-700 active:scale-95 text-white text-xs sm:text-sm font-extrabold transition-all duration-150 shadow-md shadow-orange-500/20 text-center"
             >
               <span>{t('externalLink')}</span>
               <ExternalLink size={14} />

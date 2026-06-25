@@ -14,11 +14,12 @@ import {
 } from 'recharts';
 import { getCategorySummaries, CategorySummary } from '@/lib/pricewatch/utils';
 import StorePill from '@/components/ui/StorePill';
-import type { Product, Locale } from '@/types/pricewatch';
+import type { Product, Locale, StoreName } from '@/types/pricewatch';
 
 interface CategoryHistoryViewProps {
   products: Product[];
   locale: Locale;
+  onCategoryClick?: (category: string, store?: StoreName | 'all') => void;
 }
 
 const CATEGORY_COLORS = [
@@ -31,7 +32,7 @@ const CATEGORY_COLORS = [
   '#06b6d4', // cyan
 ];
 
-export default function CategoryHistoryView({ products, locale }: CategoryHistoryViewProps) {
+export default function CategoryHistoryView({ products, locale, onCategoryClick }: CategoryHistoryViewProps) {
   const t = useTranslations('categories');
   const [mounted, setMounted] = useState(false);
 
@@ -91,13 +92,14 @@ export default function CategoryHistoryView({ products, locale }: CategoryHistor
         {summaries.map((summary) => (
           <div
             key={summary.category}
-            className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow"
+            onClick={() => onCategoryClick?.(summary.category)}
+            className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800/80 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow cursor-pointer hover:border-blue-300 dark:hover:border-blue-900/60 group"
           >
             <div>
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider group-hover:text-blue-500 transition-colors">
                 Category
               </span>
-              <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200 mt-0.5 line-clamp-1 tracking-tight">
+              <h3 className="text-base font-extrabold text-slate-800 dark:text-slate-200 mt-0.5 line-clamp-1 tracking-tight group-hover:text-slate-900 dark:group-hover:text-white transition-colors">
                 {summary.category}
               </h3>
             </div>
@@ -113,9 +115,15 @@ export default function CategoryHistoryView({ products, locale }: CategoryHistor
               </div>
             </div>
 
-            <div className="flex items-center justify-between mt-4 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800">
-              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase">{t('stat.bestStore')}</span>
-              <StorePill store={summary.cheapestStore} />
+            <div 
+              onClick={(e) => {
+                e.stopPropagation();
+                onCategoryClick?.(summary.category, summary.cheapestStore);
+              }}
+              className="flex items-center justify-between mt-4 bg-slate-50 dark:bg-slate-900/40 px-3 py-2 rounded-xl border border-slate-100 dark:border-slate-800 hover:bg-blue-50/50 dark:hover:bg-slate-800/60 transition-colors cursor-pointer group/store"
+            >
+              <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase group-hover/store:text-blue-500 transition-colors">{t('stat.bestStore')}</span>
+              <StorePill store={summary.cheapestStore} className="transition-transform group-hover/store:scale-105" />
             </div>
           </div>
         ))}

@@ -13,7 +13,12 @@ const STORE_CODE_MAP: Record<string, StoreName> = {
   AEON: 'AEON',
   HKTV: 'HKTVMALL',
   HKTVMALL: 'HKTVMALL',
-  JASONS: 'WELLCOME'
+  JASONS: 'JASONS',
+  LUNGFUNG: 'LUNGFUNG',
+  DCHFOOD: 'DCHFOOD',
+  WATSONS: 'WATSONS',
+  MANNINGS: 'MANNINGS',
+  SASA: 'SASA'
 };
 
 let cachedPricewatch: {
@@ -72,8 +77,8 @@ export async function fetchPricewatch(): Promise<{ products: Product[]; alerts: 
           const isDrop = codeNum % 7 === 0; // 14% of products have price drops
           const isRise = codeNum % 13 === 0; // 7% of products have price rises
 
-          // Extract prices
-          const prices: StorePrice[] = [];
+          // Extract prices and deduplicate by store (keeping the lowest price per store)
+          const pricesMap = {} as Record<StoreName, StorePrice>;
           const rawPrices = Array.isArray(p.prices) ? p.prices : [];
 
           rawPrices.forEach((priceItem: any) => {
@@ -96,15 +101,21 @@ export async function fetchPricewatch(): Promise<{ products: Product[]; alerts: 
                   : null;
                 const offer = matchingOfferObj ? (matchingOfferObj.en || matchingOfferObj['zh-Hant'] || undefined) : undefined;
                 
-                prices.push({
-                  store,
-                  price: currentPrice,
-                  prevPrice: prevPrice || undefined,
-                  offer
-                });
+                const existing = pricesMap[store];
+                // Keep the cheapest price if there are duplicates (e.g. WELLCOME & JASONS both mapping to WELLCOME)
+                if (!existing || currentPrice < existing.price) {
+                  pricesMap[store] = {
+                    store,
+                    price: currentPrice,
+                    prevPrice: prevPrice || undefined,
+                    offer
+                  };
+                }
               }
             }
           });
+
+          const prices = Object.values(pricesMap);
 
           // Sort prices to find the cheapest
           const sortedPrices = [...prices].sort((a, b) => a.price - b.price);
@@ -162,6 +173,18 @@ export async function fetchPricewatch(): Promise<{ products: Product[]; alerts: 
               'zh-Hant': String(brandZh)
             },
             category: String(category),
+            category1: p.cat1Name ? {
+              en: p.cat1Name.en || '',
+              'zh-Hant': p.cat1Name['zh-Hant'] || p.cat1Name['zh-Hans'] || ''
+            } : { en: String(category), 'zh-Hant': String(category) },
+            category2: p.cat2Name ? {
+              en: p.cat2Name.en || '',
+              'zh-Hant': p.cat2Name['zh-Hant'] || p.cat2Name['zh-Hans'] || ''
+            } : undefined,
+            category3: p.cat3Name ? {
+              en: p.cat3Name.en || '',
+              'zh-Hant': p.cat3Name['zh-Hant'] || p.cat3Name['zh-Hans'] || ''
+            } : undefined,
             prices,
             sparkline,
             watched: false,

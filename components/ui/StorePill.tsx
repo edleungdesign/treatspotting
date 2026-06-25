@@ -31,6 +31,30 @@ export default function StorePill({ store, active = false, className }: StorePil
         return active
           ? 'bg-orange-600 text-white border-orange-600'
           : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/40';
+      case 'JASONS':
+        return active
+          ? 'bg-teal-600 text-white border-teal-600'
+          : 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950/20 dark:text-teal-400 dark:border-teal-900/40';
+      case 'LUNGFUNG':
+        return active
+          ? 'bg-pink-600 text-white border-pink-600'
+          : 'bg-pink-50 text-pink-700 border-pink-200 dark:bg-pink-950/20 dark:text-pink-400 dark:border-pink-900/40';
+      case 'DCHFOOD':
+        return active
+          ? 'bg-amber-600 text-white border-amber-600'
+          : 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/40';
+      case 'WATSONS':
+        return active
+          ? 'bg-cyan-600 text-white border-cyan-600'
+          : 'bg-cyan-50 text-cyan-700 border-cyan-200 dark:bg-cyan-950/20 dark:text-cyan-400 dark:border-cyan-900/40';
+      case 'MANNINGS':
+        return active
+          ? 'bg-orange-600 text-white border-orange-600'
+          : 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/20 dark:text-orange-400 dark:border-orange-900/40';
+      case 'SASA':
+        return active
+          ? 'bg-fuchsia-600 text-white border-fuchsia-600'
+          : 'bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-950/20 dark:text-fuchsia-400 dark:border-fuchsia-900/40';
       default:
         return active
           ? 'bg-slate-700 text-white border-slate-700'
@@ -50,6 +74,18 @@ export default function StorePill({ store, active = false, className }: StorePil
         return 'AEON';
       case 'HKTVMALL':
         return 'HKTVmall';
+      case 'JASONS':
+        return 'Market Place';
+      case 'LUNGFUNG':
+        return 'Lung Fung 龍豐';
+      case 'DCHFOOD':
+        return 'DCH Food 大昌';
+      case 'WATSONS':
+        return 'Watsons 屈臣氏';
+      case 'MANNINGS':
+        return 'Mannings 萬寧';
+      case 'SASA':
+        return 'Sasa 莎莎';
       default:
         return name;
     }

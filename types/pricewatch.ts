@@ -1,6 +1,6 @@
 export type Locale = 'en' | 'zh-Hant';
 export type ViewName = 'dashboard' | 'results' | 'watchlist' | 'categories';
-export type StoreName = 'WELLCOME' | 'PARKNSHOP' | 'TASTE' | 'AEON' | 'HKTVMALL';
+export type StoreName = 'WELLCOME' | 'PARKNSHOP' | 'TASTE' | 'AEON' | 'HKTVMALL' | 'JASONS' | 'LUNGFUNG' | 'DCHFOOD' | 'WATSONS' | 'MANNINGS' | 'SASA';
 
 export interface StorePrice {
   store: StoreName;
@@ -15,6 +15,9 @@ export interface Product {
   name: Record<Locale, string>;
   brand: Record<Locale, string>;
   category: string;
+  category1?: Record<Locale, string>;
+  category2?: Record<Locale, string>;
+  category3?: Record<Locale, string>;
   prices: StorePrice[];
   sparkline: number[];
   watched: boolean;

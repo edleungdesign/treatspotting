@@ -59,6 +59,41 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
     );
   }, []);
 
+  // Handle KPI card clicks from the Dashboard
+  const handleStatClick = useCallback((statType: 'tracked' | 'drops' | 'savings' | 'alerts') => {
+    if (statType === 'tracked') {
+      setQuickFilter('watched');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'drops') {
+      setQuickFilter('drops');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'savings') {
+      setQuickFilter('offers');
+      setSearch('');
+      setActiveStore('all');
+      setView('results');
+    } else if (statType === 'alerts') {
+      setAlertsOpen(true);
+    }
+  }, []);
+
+  // Handle clickable categories and breadcrumbs
+  const handleCategoryClick = useCallback((category: string, store?: StoreName | 'all') => {
+    setSearch(category);
+    if (store) {
+      setActiveStore(store);
+    } else {
+      setActiveStore('all');
+    }
+    setQuickFilter('');
+    setView('results');
+    setDrawerProductId(null); // Close the details drawer
+  }, []);
+
   // Process filtered items for search/comparisons
   const filteredProducts = useMemo(() => {
     // 1. Core category & store filtration
@@ -113,6 +148,7 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
             alerts={alerts}
             locale={locale}
             onProductClick={setDrawerProductId}
+            onStatClick={handleStatClick}
           />
         ) : view === 'results' ? (
           <ResultsView
@@ -130,7 +166,11 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
             onBulkRemove={handleBulkRemove}
           />
         ) : (
-          <CategoryHistoryView products={products} locale={locale} />
+          <CategoryHistoryView 
+            products={products} 
+            locale={locale} 
+            onCategoryClick={handleCategoryClick}
+          />
         )}
       </AppShell>
 
@@ -140,6 +180,8 @@ export default function AppClient({ initialProducts, initialAlerts, fromLive }: 
         open={drawerProductId !== null}
         onClose={() => setDrawerProductId(null)}
         locale={locale}
+        onWatchToggle={handleWatchToggle}
+        onCategoryClick={handleCategoryClick}
       />
     </>
   );

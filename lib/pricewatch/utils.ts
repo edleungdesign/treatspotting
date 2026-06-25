@@ -15,6 +15,13 @@ export function filterProducts(
       const nameZh = product.name['zh-Hant'].toLowerCase();
       const brandEn = product.brand.en.toLowerCase();
       const brandZh = product.brand['zh-Hant'].toLowerCase();
+      const catText = product.category.toLowerCase();
+      const cat1En = product.category1?.en.toLowerCase() || '';
+      const cat1Zh = product.category1?.['zh-Hant'].toLowerCase() || '';
+      const cat2En = product.category2?.en.toLowerCase() || '';
+      const cat2Zh = product.category2?.['zh-Hant'].toLowerCase() || '';
+      const cat3En = product.category3?.en.toLowerCase() || '';
+      const cat3Zh = product.category3?.['zh-Hant'].toLowerCase() || '';
       const code = product.code;
 
       const matchesSearch =
@@ -22,6 +29,13 @@ export function filterProducts(
         nameZh.includes(normQuery) ||
         brandEn.includes(normQuery) ||
         brandZh.includes(normQuery) ||
+        catText.includes(normQuery) ||
+        cat1En.includes(normQuery) ||
+        cat1Zh.includes(normQuery) ||
+        cat2En.includes(normQuery) ||
+        cat2Zh.includes(normQuery) ||
+        cat3En.includes(normQuery) ||
+        cat3Zh.includes(normQuery) ||
         code.includes(normQuery);
 
       if (!matchesSearch) return false;
