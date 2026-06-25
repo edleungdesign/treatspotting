@@ -62,6 +62,7 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
   const t = useTranslations('categories');
   const [mounted, setMounted] = useState(false);
   const [period, setPeriod] = useState<'30D' | '90D' | '180D' | '1Y' | 'ALL'>('90D');
+  const [hiddenCategories, setHiddenCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setTimeout(() => {
@@ -81,6 +82,23 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
 
     let pointCount = 15;
     let daysInterval = 6;
+
+    // Period configurations for realistic retail market price indexes
+    const periodConfigs: Record<string, {
+      driftCoeff: number;
+      waveFreq: number;
+      waveAmp: number;
+      noiseAmp: number;
+      baseValue: number;
+    }> = {
+      '30D': { driftCoeff: -0.05, waveFreq: 0.95, waveAmp: 0.8, noiseAmp: 0.3, baseValue: 101.2 },
+      '90D': { driftCoeff: 0.12, waveFreq: 0.55, waveAmp: 1.4, noiseAmp: 0.5, baseValue: 99.4 },
+      '180D': { driftCoeff: -0.16, waveFreq: 0.38, waveAmp: 2.1, noiseAmp: 0.7, baseValue: 102.3 },
+      '1Y': { driftCoeff: 0.28, waveFreq: 0.22, waveAmp: 3.4, noiseAmp: 1.1, baseValue: 97.8 },
+      'ALL': { driftCoeff: -0.32, waveFreq: 0.14, waveAmp: 4.8, noiseAmp: 1.6, baseValue: 104.5 },
+    };
+
+    const config = periodConfigs[period] || periodConfigs['90D'];
 
     if (period === '30D') {
       pointCount = 15;
@@ -113,13 +131,29 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
       const point: any = { date: dateStr };
 
       categoriesList.forEach((cat, index) => {
-        const baseTrend = 100;
-        const driftDirection = index % 2 === 0 ? -0.15 : 0.12;
-        const drift = (pointCount - 1 - i) * driftDirection;
-        const wave = Math.sin(i * 1.5 + index) * 1.2;
-        const seasonal = (period === '1Y' || period === 'ALL') ? Math.cos(i * 0.8 + index) * 2.0 : 0;
+        // Generate a stable seed from category name
+        const seed = cat.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) + index * 13;
         
-        point[cat] = Math.round((baseTrend + drift + wave + seasonal) * 10) / 10;
+        // Define unique trajectory shapes for each category to prevent overlap
+        const driftSign = index % 3 === 0 ? -1.0 : (index % 3 === 1 ? 1.0 : 0.2);
+        const catFreqScale = 0.85 + (index % 4) * 0.12;
+        
+        // Compute drift over the selected period points
+        const drift = (pointCount - 1 - i) * config.driftCoeff * driftSign;
+        
+        // Compute cyclic oscillations (representing standard promotions or supply fluctuations)
+        const wave = Math.sin((i + seed % 10) * config.waveFreq * catFreqScale) * config.waveAmp;
+        
+        // Short-term noise
+        const noise = Math.cos((i * 2.3 + seed) * 1.5) * config.noiseAmp;
+        
+        // Combine into a realistic starting baseline
+        let val = config.baseValue + drift + wave + noise;
+        
+        // Limit to a standard retail price index range
+        val = Math.max(88, Math.min(115, val));
+        
+        point[cat] = Math.round(val * 10) / 10;
       });
 
       dates.push(point);
@@ -242,7 +276,32 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
                 <Legend
                   iconType="circle"
                   iconSize={8}
-                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px' }}
+                  wrapperStyle={{ fontSize: '10px', fontWeight: 'bold', paddingTop: '10px', cursor: 'pointer' }}
+                  onClick={(o) => {
+                    const dataKey = o?.dataKey;
+                    if (typeof dataKey === 'string') {
+                      setHiddenCategories((prev) => ({
+                        ...prev,
+                        [dataKey]: !prev[dataKey],
+                      }));
+                    }
+                  }}
+                  formatter={(value, entry: any) => {
+                    const cat = entry?.payload?.dataKey;
+                    const isHidden = cat ? hiddenCategories[cat] : false;
+                    const found = chartData.categoriesList.find((c) => getCategoryCode(c) === value);
+                    const label = found ? `${value} (${found})` : value;
+                    
+                    return (
+                      <span className={`select-none transition-all ${
+                        isHidden 
+                          ? 'text-slate-300 dark:text-slate-600 line-through decoration-slate-400 dark:decoration-slate-500 font-normal' 
+                          : 'text-slate-700 dark:text-slate-300 hover:text-blue-500'
+                      }`}>
+                        {label}
+                      </span>
+                    );
+                  }}
                 />
 
                 {chartData.categoriesList.map((cat, index) => (
@@ -255,6 +314,7 @@ export default function CategoryHistoryView({ products, locale, onCategoryClick 
                     strokeWidth={2.5}
                     dot={false}
                     activeDot={{ r: 5 }}
+                    hide={hiddenCategories[cat]}
                   />
                 ))}
               </LineChart>
